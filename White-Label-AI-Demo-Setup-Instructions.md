@@ -1,201 +1,203 @@
-# White-Label AI Demo — Student Setup Instructions
+# White-Label AI Demo — Setup Guide (Windows + Linux/Fedora)
 
----
+## Step 0: Install Node.js (one time only)
 
-## Step 0: Install Node.js (do this first, one time only)
+`npm install` does not work until Node.js is installed. Install the **LTS** version (v20 or newer; the guide was tested on v24).
 
-`npm install` will not work at all until Node.js is installed on your computer.
+**Windows**
 
-## Linux
-1. Directory must be in linux friendly filesystem type
-2. in directory /client and /server, rm -rf node_modules package-lock.json
-3. npm install in main directory, /client and /server directory
+1. Go to **nodejs.org** and download the **LTS** version.
+2. Run the installer and keep every default option checked, especially "Add to PATH".
+3. Close all open terminal windows, then open a **new** Command Prompt or PowerShell.
+4. Check that it worked:
 
-1. Open a browser and go to **nodejs.org**
-2. Download the **LTS** version (the button usually says "Recommended for Most Users")
-3. Run the installer and click **Next** through all screens, keeping every default option checked (especially "Add to PATH")
-4. When installation finishes, **close any open Command Prompt / PowerShell / terminal windows**
-5. Open a **new** Command Prompt or PowerShell window and check it worked:
-   ```
-   node -v
-   npm -v
-   ```
-   You should see version numbers (e.g. `v20.11.0`). If you see "not recognized," restart your computer and try again.
-
----
-
-## Step 1: Get the files
-
-1. Unzip `white-label-ai-demo.zip` to your **Desktop** (or any folder you can find easily).
-   - Right-click the zip file → **Extract All** → choose a destination → **Extract**
-2. **If you get an error saying the zip is invalid or corrupted:**
-   - The file was likely damaged during download or transfer
-   - Ask your instructor for a fresh copy, or re-download it
-   - Do not try to force-open a corrupted zip — it will cause missing-file errors later
-
----
-
-## Step 2: Confirm you have the right folder (fixes the "no package.json" error)
-
-Before running `npm install`, confirm the folder actually contains project files.
-
-1. Open the extracted `white-label-ai-demo` folder in File Explorer
-2. You should see a file named **`package.json`** somewhere inside (in the root folder, and/or inside a `server` folder if the project is split into frontend/backend)
-3. **If you do NOT see a `package.json` file anywhere:**
-   - The zip extracted incorrectly or was incomplete — go back to Step 1 and re-extract, or get a fresh zip file
-   - You may have opened the wrong folder — check for a nested folder inside (sometimes a zip extracts into `white-label-ai-demo/white-label-ai-demo/`)
-4. **If you see `package.json` but `npm install` still fails**, it's almost always because your terminal is open in the wrong folder — see Step 3.
-
----
-
-## Step 3: Open a terminal in the correct folder
-
-This is the step most students get wrong. The terminal must be opened **inside the project folder**, not the Desktop or anywhere else.
-
-**Easiest method:**
-1. Open the `white-label-ai-demo` folder in File Explorer
-2. Click once in the address bar at the top (where the folder path is shown)
-3. Type `cmd` and press **Enter**
-4. A black terminal window opens, already inside the correct folder
-
-**Confirm you're in the right place:**
 ```
-dir
+node -v
+npm -v
 ```
-You should see `package.json` listed in the output. If you don't, you're in the wrong folder — go back and repeat the steps above.
 
----
+You should see version numbers. If you see "not recognized", restart your computer and try again.
 
-## Step 4: Install dependencies
+**Linux (Fedora)**
 
-With your terminal open inside the project folder (confirmed in Step 3):
+```
+sudo dnf install nodejs npm
+node -v
+npm -v
+```
+
+**Linux requirement:** keep the project on a Linux filesystem (ext4, xfs, btrfs). NTFS and exFAT drives break `node_modules`. Check with `df -T <your folder>`.
+
+## Steps 1-3: Get the files and open a terminal in the right folder
+
+Most setup errors come from a bad extract or a terminal opened in the wrong folder.
+
+1. Unzip `white-label-ai-demo.zip` somewhere easy to find (Desktop on Windows, your home or a project folder on Linux).
+2. If the zip is "invalid" or "corrupted", get a fresh copy. Do not force it open, because missing files cause errors later.
+3. Open the extracted folder and look for `package.json`. A zip sometimes extracts into a nested folder (`white-label-ai-demo/white-label-ai-demo/`), so open the inner one.
+4. Open a terminal **inside that folder**:
+   - **Windows:** click the File Explorer address bar, type `cmd`, press Enter.
+   - **Linux:** right-click the folder, choose "Open in Terminal", or run `cd /path/to/white-label-ai-demo`.
+5. Confirm you are in the right place. You should see `package.json` plus the `client` and `server` folders:
+
+```
+dir        # Windows
+ls         # Linux
+```
+
+## Step 4: Install dependencies (including TensorFlow.js and sharp)
+
+The server's `model/adapter.js` needs `@tensorflow/tfjs` and `sharp`. If either is missing, the backend crashes on startup. The app then shows "Could not load settings from MySQL (500)" even when MySQL is fine.
+
+From the project folder, run:
 
 ```
 npm install
+cd server
+npm install
+cd ../client
+npm install
+cd ..
+npm install @tensorflow/tfjs sharp
 ```
 
-Wait for it to finish — this can take a minute or two and will create a new `node_modules` folder.
+Notes:
 
-**If the project has a separate backend folder** (e.g. a folder named `server`):
-1. In the same terminal, move into that folder:
-   ```
-   cd server
-   ```
-2. Run `npm install` again inside it
-3. Move back out when done:
-   ```
-   cd ..
-   ```
+- Installing `@tensorflow/tfjs` and `sharp` in the **root** folder works, because Node finds packages by looking up the folder tree. Installing them in `server` also works.
+- Use `@tensorflow/tfjs` (pure JavaScript). Avoid `@tensorflow/tfjs-node`, which often fails to build on new Node versions.
+- npm may report "3 moderate severity vulnerabilities" and an `allow-scripts` warning for `core-js`. Both are safe to ignore here. Do **not** run `npm audit fix --force`.
 
----
+**Linux clean reinstall** (only if installs fail or behave strangely):
 
-## Step 5: Set up MySQL
+```
+rm -rf node_modules package-lock.json
+cd server && rm -rf node_modules package-lock.json && cd ..
+cd client && rm -rf node_modules package-lock.json && cd ..
+```
 
-1. Make sure MySQL is running (e.g. start it from the **XAMPP Control Panel**)
-2. Check your MySQL login:
-   - If it uses the XAMPP default (username `root`, no password), skip to step 3 below
-   - Otherwise, copy `server/.env.example` and rename the copy to `server/.env`, then open it in a text editor and fill in your actual MySQL username and password
-3. Create the database. Open phpMyAdmin (or any MySQL client) and run:
-   ```sql
-   CREATE DATABASE white_label_ai_demo;
-   ```
+Then repeat the install commands above.
 
----
+## Step 5: Set up MySQL (XAMPP) and import schema.sql
 
-## Step 6: Start the app
+1. Start MySQL.
+   - **Windows:** open the XAMPP Control Panel and click Start next to MySQL.
+   - **Linux:** run `sudo /opt/lampp/lampp start`. The repeated `egrep: warning: egrep is obsolescent` lines are harmless, and "already running" means it is up.
+2. Open phpMyAdmin at `http://localhost/phpmyadmin`.
+3. Import `schema.sql`: click the **Import** tab, choose the file, then click Import. It creates the database `white_label_ai_demo` with the `settings` and `predictions` tables, and one settings row ("My AI App"). You can also paste the file into the **SQL** tab.
+4. Create `server/.env`. Copy `server/.env.example` and rename the copy to exactly `.env` (not `_env`, not `.env.example`). The XAMPP default looks like this:
 
-From your terminal, still inside the project folder:
+```
+PORT=3001
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=
+MYSQL_DATABASE=white_label_ai_demo
+```
+
+If `localhost` fails as a host, use `127.0.0.1`, because on Linux `localhost` can try a socket instead of TCP. Restart the backend after any `.env` change, since it only reads the file at startup.
+
+**Linux check:** if Fedora's own `mariadb` or `mysqld` service holds port 3306, XAMPP's MySQL cannot take it. Check with `sudo ss -ltnp | grep 3306`, then stop the other service with `sudo systemctl stop mariadb mysqld`.
+
+## Steps 6-8: Start the app and try it out
+
+From the project root, one command starts both the server and the client:
 
 ```
 npm run dev
 ```
 
-If the frontend and backend are separate, you need **two terminals running at the same time**:
-1. One terminal inside the root folder running `npm run dev` (frontend)
-2. Another terminal inside `server` running `npm run dev` (backend)
+If your project is set up with separate frontend and backend scripts instead, open two terminals: one in the root running `npm run dev`, the other in `server` running `npm run dev`. Leave them open while you use the app.
 
-Leave both terminal windows open while you use the app — closing them shuts the app down.
+**Open it in your browser**
 
----
+- UI: `http://localhost:5173`
+- API: `http://localhost:3001`
 
-## Step 7: Open it in your browser
+**Quick health check**
 
-- **UI:** http://localhost:5173
-- **API:** http://localhost:3001
-
----
-
-## Step 8: Try it out
-
-- **Predict** — upload an image or use your webcam → sends the image to `/api/predict` and shows a label
-- **History** — view past predictions logged in MySQL, newest first, with a "Clear History" button
-- **Settings** — change the app name, upload a logo, and view the model label. These update the header, page title, and favicon automatically (all pulled from the `settings` table in the database)
-
----
-
-## Step 9 (the actual assignment): Plug in your own trained model
-
-Edit **only** this one file:
 ```
-server/model/adapter.js
+curl http://localhost:3001/api/settings
 ```
 
-Replace the mock `predict()` function so it returns real results in this exact shape:
+This should return JSON containing "My AI App". The terminal should show the server listening, with no stack trace.
+
+**What the app does**
+
+- **Predict:** upload an image or use your webcam. It sends the image to `/api/predict` and shows a label.
+- **History:** past predictions logged in MySQL, newest first, with a Clear History button.
+- **Settings:** change the app name and logo and see the model label. The header, page title and favicon update automatically from the `settings` table.
+
+## Step 9 (the assignment): Plug in your own trained model
+
+Edit **only** `server/model/adapter.js`. Replace the mock `predict()` so it returns this exact shape:
+
 ```js
 { label: "your_label", confidence: 0.94 }
 ```
 
-You have three options depending on how you built your model:
+Choose the option that matches how you built your model.
 
-### Option A — Teachable Machine (no-code)
-1. Train your model at teachablemachine.withgoogle.com
-2. Export it as **TensorFlow.js**
-3. Load it inside `adapter.js` using the `@tensorflow/tfjs` library and run predictions there
+**Option A: Teachable Machine (no code)**
 
-### Option B — TensorFlow.js (JavaScript)
-Train and save a TensorFlow.js model directly, then load and run it inside `adapter.js`.
+1. Train your model at teachablemachine.withgoogle.com.
+2. Export it as **TensorFlow.js**.
+3. Load it in `adapter.js` with `@tensorflow/tfjs` and run predictions there.
 
-### Option C — Python model + HTTP bridge (most common for ML classes)
-1. Train your model in Python (TensorFlow/Keras, PyTorch, scikit-learn — whatever you used in class)
-2. Save the trained model file (e.g. `.keras`, `.h5`, `.pt`)
-3. Write a small Python script using Flask or FastAPI that loads the model and exposes one endpoint, e.g.:
-   ```python
-   from flask import Flask, request, jsonify
+**Option B: TensorFlow.js (JavaScript)**
 
-   app = Flask(__name__)
+Train and save a TensorFlow.js model, then load and run it inside `adapter.js`.
 
-   @app.route('/predict', methods=['POST'])
-   def predict():
-       image = request.files['image']
-       # run your model here
-       return jsonify({ "label": "example", "confidence": 0.94 })
+**Option C: Python model plus HTTP bridge (most common for ML classes)**
 
-   app.run(port=5000)
-   ```
-4. Run that Python script separately (`python app.py`) alongside the Node app
-5. In `adapter.js`, call your Python server over HTTP and return its response:
-   ```js
-   async function predict(imageData) {
-     const response = await fetch('http://localhost:5000/predict', {
-       method: 'POST',
-       body: imageData
-     });
-     const result = await response.json();
-     return { label: result.label, confidence: result.confidence };
-   }
-   ```
+1. Train your model in Python (TensorFlow/Keras, PyTorch or scikit-learn) and save it, for example as `.keras`, `.h5` or `.pt`.
+2. Write a small Flask or FastAPI script that loads the model and exposes one endpoint:
 
-**Important for Option C:** your Python server must be running before you test Predict in the app, and the model file it loads (e.g. `chemical_sign_model.keras`) must actually exist in the same folder your Python script expects — if training didn't finish successfully, this file won't exist and you'll get a "file not found" error.
+```python
+from flask import Flask, request, jsonify
 
----
+app = Flask(__name__)
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    image = request.files['image']
+    # run your model here
+    return jsonify({ "label": "example", "confidence": 0.94 })
+
+app.run(port=5000)
+```
+
+3. Run it separately with `python app.py`, alongside the Node app.
+4. In `adapter.js`, call the Python server and return its response:
+
+```js
+async function predict(imageData) {
+  const response = await fetch('http://localhost:5000/predict', {
+    method: 'POST',
+    body: imageData
+  });
+  const result = await response.json();
+  return { label: result.label, confidence: result.confidence };
+}
+```
+
+**Option C reminder:** the Python server must be running before you test Predict. The model file it loads (for example `chemical_sign_model.keras`) must exist in the folder the script expects. If training did not finish, the file will be missing and you will get a "file not found" error.
 
 ## Common problems and fixes
 
+The first rows cover the most frequent failure: the settings error caused by a backend crash.
+
 | Problem | Likely cause | Fix |
-|---|---|---|
-| `npm install` says "not recognized" | Node.js isn't installed | Redo Step 0 |
-| `npm install` fails, no error about missing packages | Terminal is in the wrong folder | Redo Step 3, confirm with `dir` |
-| No `package.json` found anywhere | Zip extracted incorrectly / incomplete | Re-extract or get a fresh zip |
-| Zip won't extract, "invalid" error | Corrupted download/transfer | Re-download or re-copy the zip file fresh |
-| App loads but Predict always shows the same fake label | You haven't edited `adapter.js` yet | Complete Step 9 |
-| Python model app says "File not found: model.keras" | Training script never finished or saved to a different folder | Re-run your training script fully and confirm the `.keras` file appears in the expected folder before starting the Python server |
+| --- | --- | --- |
+| "Could not load settings from MySQL: Request failed (500)" | The backend crashed or is not running, so Vite reports a 500 | Read the backend terminal. Fix the error shown there (usually a missing package), then restart |
+| `Cannot find module '@tensorflow/tfjs'` or `'sharp'` | Package not installed | Run `npm install @tensorflow/tfjs sharp` in the root (or `server`) folder |
+| `ECONNREFUSED` to port 3306 | MySQL not running, or another MySQL service is on 3306 | Start MySQL (`sudo /opt/lampp/lampp start` on Linux). Check `sudo ss -ltnp \| grep 3306` |
+| `Access denied for user` | Wrong username or password in `server/.env` | XAMPP default is `root` with an empty password |
+| `Unknown database` or `Table ... settings doesn't exist` | `schema.sql` not imported into `white_label_ai_demo` | Re-import it in phpMyAdmin (Import or SQL tab) |
+| `.env` changes have no effect | Backend not restarted, or file misnamed | Name it exactly `server/.env` and restart the backend |
+| `npm install` says "not recognized" | Node.js not installed | Redo Step 0 |
+| `npm install` fails, or no `package.json` found | Terminal in the wrong folder, or incomplete zip | Redo Steps 1-3 and confirm with `dir` / `ls` |
+| Zip will not extract | Corrupted download | Get a fresh copy of the zip |
+| `npm install` fails on Linux | Drive is NTFS/exFAT, or stale `node_modules` | Use an ext4/xfs/btrfs drive. Delete `node_modules` and `package-lock.json`, then reinstall |
+| Predict always shows the same fake label | `adapter.js` not edited yet | Complete Step 9 |
+| Python model app says "File not found: model.keras" | Training never finished or saved elsewhere | Re-run training and confirm the `.keras` file exists before starting the Python server |
